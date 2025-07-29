@@ -1,27 +1,26 @@
 package com.swissre.service;
 
+import static com.swissre.constants.ConfigConstants.MAX_HIERARCY_LEVEL;
+import static com.swissre.constants.Constants.MGR_WITH_HIGHER_AVG_SAL;
+import static com.swissre.constants.Constants.MGR_WITH_LESS_AVG_SAL;
+
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.Set;
 
 import com.swissre.dto.Subordinates;
 import com.swissre.entity.Employee;
 import com.swissre.util.EmployeeCSVReader;
 import com.swissre.util.EmployeeCSVReaderImpl;
-import static com.swissre.constants.Constants.*;
-import static com.swissre.constants.ConfigConstants.*;
 
 public class HCMAnalyzerImpl implements HCMAnalyzer {
 
 	private EmployeeCSVReader empFileReader = new EmployeeCSVReaderImpl();
 	private ReportService reportService = new ReportServiceImpl();
-	final String LESS_SALARY_MSG = " manager earn less than expected average salay by ";
-	final String HIGH_SALARY_MSG = " manager earn more than expected average salay by ";
-
+	
 	@Override
 	public void analyzeHCMData(String filePath) {
 		Map<Integer, Subordinates> mgrSubrdnateMap = new HashMap<>();
@@ -56,12 +55,13 @@ public class HCMAnalyzerImpl implements HCMAnalyzer {
 			List<Employee> empWithHigerHierarchy = calculateAndUpdateEmpHierarchy(managerMap, mgrSubrdnateMap);
 			
 			reportService.showSalaryReport(empSalaryMap);
+			//reportService.printSalaryReportAsCsv(empSalaryMap, "C:\\Users\\Soumik PC\\Desktop\\SwissRe Coding Round\\employees_100_salary_report.csv");
 			reportService.showHierarchyReport(empWithHigerHierarchy);
+			//reportService.printHierarchyReportAsCsv(empWithHigerHierarchy,"C:\\Users\\Soumik PC\\Desktop\\SwissRe Coding Round\\employees_100_hierarchy_report.csv");
 			//showReport(analyzeSalary);
 
 		} catch (IOException e) {
 
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 
@@ -101,48 +101,6 @@ public class HCMAnalyzerImpl implements HCMAnalyzer {
 			return empLevel;
 		}
 		
-	}
-
-	private void showReport(Map<String, Map<Employee, String>> analyzeSalary) {
-		for (Entry<String, Map<Employee, String>> entry : analyzeSalary.entrySet()) {
-			System.out.println(entry.getKey());
-			Map<Employee, String> managers = entry.getValue();
-			for(Entry<Employee, String> mgr :managers.entrySet()){
-				System.out.println(mgr.getKey()+mgr.getValue());
-			}
-			System.out.println("--------------------------");
-		}
-	}
-
-	public Map<String, Map<Employee, String>> analyzeSalary(Map<Integer, Employee> managerMap,
-			Map<Integer, Subordinates> mgrSubrdnateMap) {
-		Map<String, Map<Employee, String>> salaryMap = new HashMap<>();
-		Map<Employee, String> managerWithLessSalary = new HashMap<>();
-		Map<Employee, String> managerWithHighSalary = new HashMap<>();
-		double expectedMinSal = 0;
-		double expectedMaxSal = 0;
-		for (Entry<Integer, Employee> mgrEntry : managerMap.entrySet()) {
-			Employee mgr = mgrEntry.getValue();
-			Subordinates subordinates = mgrSubrdnateMap.get(mgrEntry.getKey());
-			// Calculating average salary
-			double totalSubordinatesSalary = subordinates.getTotalSubordinatesSalary();
-			double avgSal = 0.0;
-			if (totalSubordinatesSalary > 0) {
-				avgSal = totalSubordinatesSalary / subordinates.getSubordinatesCount();
-				expectedMinSal = avgSal * AVG_MIN_SAL;
-				expectedMaxSal = avgSal * AVG_Max_SAL;
-				if (mgr.getSalary() < expectedMinSal) {
-					managerWithLessSalary.put(mgr, LESS_SALARY_MSG + (expectedMinSal - mgr.getSalary())+" [Average Expected Minimum Salary::"+expectedMinSal+"]");
-				} else if (mgr.getSalary() > expectedMaxSal) {
-					managerWithHighSalary.put(mgr, HIGH_SALARY_MSG + ( mgr.getSalary() - expectedMaxSal)+"[ Average Expected Maximum Salary::"+expectedMaxSal+"]");
-				}
-			}
-		}
-
-		salaryMap.put("MGR_WITH_LESS_AVG_SAL", managerWithLessSalary);
-		salaryMap.put("MGR_WITH_MORE_AVG_SAL", managerWithHighSalary);
-
-		return salaryMap;
 	}
 
 	public Map<String, Map<Employee, Double>> analyzeSalary_v2(Map<Integer, Employee> managerMap,
